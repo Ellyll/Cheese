@@ -53,6 +53,22 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    function redenerScenery(entities, level) {
+        console.log(level);
+        const NO_OF_LINES = 32;
+        const NO_OF_COLUMNS = 32;
+        const COLUMN_WIDTH = 16;
+        const LINE_HEIGHT = 16;
+        for (let line = 0 ; line < NO_OF_LINES ; line++ ) {
+            for (let col = 0 ; col < NO_OF_COLUMNS ; col++) {
+                const entityCode = level.data[line].charAt(col);
+                const x = col * COLUMN_WIDTH;
+                const y = line * LINE_HEIGHT;
+                renderEntity(entities, entityCode, x, y);
+            }
+        }
+    }
+
     let promises = [];
     for(const element of entities) {
         element.img = new Image(element.size.x, element.size.y);
@@ -70,21 +86,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.log("Loaded all");
         fetch('level1.json')
             .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                const NO_OF_LINES = 32;
-                const NO_OF_COLUMNS = 32;
-                const COLUMN_WIDTH = 16;
-                const LINE_HEIGHT = 16;
-                for (let line = 0 ; line < NO_OF_LINES ; line++ ) {
-                    for (let col = 0 ; col < NO_OF_COLUMNS ; col++) {
-                        const entityCode = data.data[line].charAt(col);
-                        const x = col * COLUMN_WIDTH;
-                        const y = line * LINE_HEIGHT;
-                        renderEntity(entities, entityCode, x, y);
-                    }
-                }
-            })
+            .then(data => redenerScenery(entities, data))
             .catch((error) => console.log('Error:', error));
     });
 
