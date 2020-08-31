@@ -11,6 +11,24 @@ document.addEventListener("DOMContentLoaded", function() {
             src: 'img/wall.png'
         },
         {
+            name: 'wall_left',
+            code: 'L',
+            size: { x: 16, y: 16},
+            src: 'img/wall-left.png'
+        },
+        {
+            name: 'wall_right',
+            code: 'R',
+            size: { x: 16, y: 16},
+            src: 'img/wall-right.png'
+        },
+        {
+            name: 'wall_both',
+            code: 'B',
+            size: { x: 16, y: 16},
+            src: 'img/wall-both.png'
+        },
+        {
             name: 'floor',
             code: 'F',
             size: { x: 16, y: 16},
