@@ -32,5 +32,8 @@
         "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
         "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
         "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
-    ]
+    ],
+    "player": {
+        "start": { "x": 32, "y": 16 }
+    }
 }

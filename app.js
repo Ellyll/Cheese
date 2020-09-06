@@ -39,6 +39,12 @@ document.addEventListener("DOMContentLoaded", function() {
             code: 'C',
             size: { x: 16, y: 16},
             src: 'img/cheese_16x16.png'
+        },
+        {
+            name: 'cheese_master',
+            code: 'M',
+            size: { x: 16, y: 16},
+            src: 'img/cheese-master.png'
         }
     ];
 
@@ -54,7 +60,6 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function redenerScenery(entities, level) {
-        console.log(level);
         const NO_OF_LINES = 32;
         const NO_OF_COLUMNS = 32;
         const COLUMN_WIDTH = 16;
@@ -69,13 +74,21 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    function updateWorld(entities, level, time)
+    {        
+        redenerScenery(entities, level);
+        renderEntity(entities, 'C', 16, 16);
+        renderEntity(entities, 'M', level.player.currentLocation.x, level.player.currentLocation.y);
+        window.requestAnimationFrame((t) => updateWorld(entities, level, t));
+    }
+
+
     let promises = [];
     for(const element of entities) {
         element.img = new Image(element.size.x, element.size.y);
         element.img.src = element.src;
         let promise = new Promise((resolve,reject) => {
             element.img.onload = () => {
-                console.log('Loaded', element);
                 resolve();
             }
         });
@@ -83,10 +96,12 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     Promise.all(promises).then(() => {
-        console.log("Loaded all");
         fetch('level1.json')
             .then(response => response.json())
-            .then(data => redenerScenery(entities, data))
+            .then(level =>  {
+                level.player.currentLocation = level.player.start;
+                updateWorld(entities, level, null);
+            })
             .catch((error) => console.log('Error:', error));
     });
 
