@@ -74,13 +74,56 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     }
 
+    const controls = {
+        player: {
+            upPressed: false,
+            downPressed: false,
+            leftPressed: false,
+            rightPressed: false
+        }
+    };
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'ArrowUp' || event.key === 'w') {
+            controls.player.upPressed = true;
+        }
+        if (event.key === 'ArrowDown' || event.key === 's') {
+            controls.player.downPressed = true;
+        }
+        if (event.key === 'ArrowLeft' || event.key === 'a') {
+            controls.player.leftPressed = true;
+        }
+        if (event.key === 'ArrowRight' || event.key === 'd') {
+            controls.player.rightPressed = true;
+        }
+    });
+
+
     function updateWorld(entities, level, time)
-    {        
+    {
+        if (controls.player.upPressed) {
+            level.player.currentLocation.y--;
+            controls.player.upPressed = false;
+        }
+        if (controls.player.downPressed) {
+            level.player.currentLocation.y++;
+            controls.player.downPressed = false;
+        }
+        if (controls.player.leftPressed) {
+            level.player.currentLocation.x--;
+            controls.player.leftPressed = false;
+        }
+        if (controls.player.rightPressed) {
+            level.player.currentLocation.x++;
+            controls.player.rightPressed = false;
+        }
+
         redenerScenery(entities, level);
         renderEntity(entities, 'C', 16, 16);
         renderEntity(entities, 'M', level.player.currentLocation.x, level.player.currentLocation.y);
         window.requestAnimationFrame((t) => updateWorld(entities, level, t));
     }
+
 
 
     let promises = [];
