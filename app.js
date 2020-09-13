@@ -98,30 +98,49 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-
-    function updateWorld(entities, level, time)
-    {
-        if (controls.player.upPressed) {
-            level.player.currentLocation.y--;
+    document.addEventListener('keyup', function(event) {
+        if (event.key === 'ArrowUp' || event.key === 'w') {
             controls.player.upPressed = false;
         }
-        if (controls.player.downPressed) {
-            level.player.currentLocation.y++;
+        if (event.key === 'ArrowDown' || event.key === 's') {
             controls.player.downPressed = false;
         }
-        if (controls.player.leftPressed) {
-            level.player.currentLocation.x--;
+        if (event.key === 'ArrowLeft' || event.key === 'a') {
             controls.player.leftPressed = false;
         }
-        if (controls.player.rightPressed) {
-            level.player.currentLocation.x++;
+        if (event.key === 'ArrowRight' || event.key === 'd') {
             controls.player.rightPressed = false;
+        }
+    });
+
+    function updateWorld(entities, level, currentTime, previousTime)
+    {
+        if (currentTime !== null && currentTime !== undefined
+            && previousTime !== null && previousTime !== undefined) {
+            
+            let deltaTime = currentTime - previousTime;
+            // distance = speed * time (convert milliseconds to seconds)
+            let dx = 128 * (deltaTime/1000);
+            let dy = dx;
+
+            if (controls.player.upPressed) {
+                level.player.currentLocation.y -= dy;
+            }
+            if (controls.player.downPressed) {
+                level.player.currentLocation.y += dx;
+            }
+            if (controls.player.leftPressed) {
+                level.player.currentLocation.x -= dx;
+            }
+            if (controls.player.rightPressed) {
+                level.player.currentLocation.x += dx;
+            }
         }
 
         redenerScenery(entities, level);
         renderEntity(entities, 'C', 16, 16);
         renderEntity(entities, 'M', level.player.currentLocation.x, level.player.currentLocation.y);
-        window.requestAnimationFrame((t) => updateWorld(entities, level, t));
+        window.requestAnimationFrame((t) => updateWorld(entities, level, t, currentTime));
     }
 
 
@@ -143,7 +162,7 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(response => response.json())
             .then(level =>  {
                 level.player.currentLocation = level.player.start;
-                updateWorld(entities, level, null);
+                updateWorld(entities, level, null, null);
             })
             .catch((error) => console.log('Error:', error));
     });
