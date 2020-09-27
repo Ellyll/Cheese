@@ -1,32 +1,64 @@
 document.addEventListener("DOMContentLoaded", function() {
+    class Vector2 {
+        constructor(x,y) {
+            this._x = x;
+            this._y = y;
+        }
+        get 0() {
+            return this._x; 
+        }
+        get 1() {
+            return this._y; 
+        }
+        get x() {
+            return this._x; 
+        }
+        get y() {
+            return this._y; 
+        }
+    }
+
+    class BoundingBox {
+        constructor(topLeft, bottomRight) {
+            this._topLeft = topLeft;
+            this._bottomRight = bottomRight;
+        }
+        get topLeft() { return this._topLeft; }
+        get bottomRight() { return this._bottomRight; }
+    }
+
 
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
 
-    const entities = [
+    const entityTypes = [
         {
             name: 'wall',
             code: 'W',
             size: { x: 16, y: 16},
-            src: 'img/wall.png'
+            src: 'img/wall.png',
+            boundingBox: new BoundingBox(new Vector2(0,0), new Vector2(15,15))
         },
         {
             name: 'wall_left',
             code: 'L',
             size: { x: 16, y: 16},
-            src: 'img/wall-left.png'
+            src: 'img/wall-left.png',
+            boundingBox: new BoundingBox(new Vector2(0,0), new Vector2(15,15))
         },
         {
             name: 'wall_right',
             code: 'R',
             size: { x: 16, y: 16},
-            src: 'img/wall-right.png'
+            src: 'img/wall-right.png',
+            boundingBox: new BoundingBox(new Vector2(0,0), new Vector2(15,15))
         },
         {
             name: 'wall_both',
             code: 'B',
             size: { x: 16, y: 16},
-            src: 'img/wall-both.png'
+            src: 'img/wall-both.png',
+            boundingBox: new BoundingBox(new Vector2(0,0), new Vector2(15,15))
         },
         {
             name: 'floor',
@@ -44,35 +76,97 @@ document.addEventListener("DOMContentLoaded", function() {
             name: 'cheese_master',
             code: 'M',
             size: { x: 16, y: 16},
-            src: 'img/cheese-master.png'
+            src: 'img/cheese-master.png',
+            boundingBox: new BoundingBox(new Vector2(0,15), new Vector2(15,31))
         }
     ];
 
-    function renderEntity(entities, entityCode, x, y) {
-        const entity = entities.find(x => x.code == entityCode);
-        if (entity === undefined) {
+    function addVector2(a,b) {
+        return new Vector2(a.x+b.x, a.y+b.y);
+    }
+
+    function areBoundingBoxesColliding(a, b) {
+        // if any of a's verticies are within b they collide
+        return (
+            // a topLeft
+            (a.topLeft.x >= b.topLeft.x && a.topLeft.x <= b.bottomRight.x
+             && a.topLeft.y >= b.topLeft.y && a.topLeft.y <= b.bottomRight.y) ||
+            // a topRight
+            (a.bottomRight.x >= b.topLeft.x && a.bottomRight.x <= b.bottomRight.x
+             && a.topLeft.y >= b.topLeft.y && a.topLeft.y <= b.bottomRight.y) ||
+            // a bottomLeft
+            (a.topLeft.x >= b.topLeft.x && a.topLeft.x <= b.bottomRight.x
+             && a.bottomRight.y >= b.topLeft.y && a.bottomRight.y <= b.bottomRight.y) ||
+            // a bottomRight
+            (a.bottomRight.x >= b.topLeft.x && a.bottomRight.x <= b.bottomRight.x
+             && a.bottomRight.y >= b.topLeft.y && a.bottomRight.y <= b.bottomRight.y)
+            );
+    }
+
+    function areEntitiesColliding(a, b) {
+        if (a.boundingBox === undefined || b.boundingBox === undefined)
+            return false;
+
+        // get actual instead of relative coords for bounding boxes
+        let bba = new BoundingBox(
+            addVector2(a.boundBox.topLeft, a.location),
+            addVector2(a.boundBox.bottomRight, a.location),
+        );
+        let bbb = new BoundingBox(
+            addVector2(b.boundBox.topLeft, b.location),
+            addVector2(b.boundBox.bottomRight, b.location),
+        );
+
+        return areBoundingBoxesColliding(bba, bbb);
+    }
+
+    function renderEntityTypeCode(entityTypes, entityCode, x, y) {
+        const entityType = entityTypes.find(x => x.code == entityCode);
+        if (entityType === undefined) {
+            console.log('ERROR', `EntityType with code '${entityCode}' not found`);
+        }
+        else
+        {
+            context.drawImage(entityType.img, x, y);
+        }
+    }
+
+    function renderEntities(entities) {
+        entities
+            .forEach(entity => context.drawImage(entity.entityType.img, entity.location.x, entity.location.y));
+    }
+
+    function parseLevelSceneryCode(entityTypes, entityCode, x, y) {
+        const entityType = entityTypes.find(x => x.code == entityCode);
+        if (entityType === undefined) {
             console.log('ERROR', `Entity with code '${entityCode}' not found`);
         }
         else
         {
-            context.drawImage(entity.img, x, y);
+            return {
+                entityType: entityType,
+                location: new Vector2(x,y)
+            };
         }
     }
 
-    function redenerScenery(entities, level) {
+    function parseLevelScenery(data, entityTypes) {
         const NO_OF_LINES = 32;
         const NO_OF_COLUMNS = 32;
         const COLUMN_WIDTH = 16;
         const LINE_HEIGHT = 16;
+        const entities = [];
         for (let line = 0 ; line < NO_OF_LINES ; line++ ) {
             for (let col = 0 ; col < NO_OF_COLUMNS ; col++) {
-                const entityCode = level.data[line].charAt(col);
+                const entityCode = data[line].charAt(col);
                 const x = col * COLUMN_WIDTH;
                 const y = line * LINE_HEIGHT;
-                renderEntity(entities, entityCode, x, y);
+                entities.push(parseLevelSceneryCode(entityTypes, entityCode, x, y));
             }
         }
+        return entities;
     }
+
 
     const controls = {
         player: {
@@ -113,7 +207,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    function updateWorld(entities, level, currentTime, previousTime)
+    function updateWorld(entityTypes, world, currentTime, previousTime)
     {
         if (currentTime !== null && currentTime !== undefined
             && previousTime !== null && previousTime !== undefined) {
@@ -123,30 +217,52 @@ document.addEventListener("DOMContentLoaded", function() {
             let dx = 128 * (deltaTime/1000);
             let dy = dx;
 
+            let newLocation = {
+                x: world.player.location.x,
+                y: world.player.location.y
+            };
+
             if (controls.player.upPressed) {
-                level.player.currentLocation.y -= dy;
+                newLocation.y -= dy;
             }
             if (controls.player.downPressed) {
-                level.player.currentLocation.y += dx;
+                newLocation.y += dx;
             }
             if (controls.player.leftPressed) {
-                level.player.currentLocation.x -= dx;
+                newLocation.x -= dx;
             }
             if (controls.player.rightPressed) {
-                level.player.currentLocation.x += dx;
+                newLocation.x += dx;
             }
+
+            const newLocationVect = new Vector2(newLocation.x, newLocation.y);
+            // get actual instead of relative coords for bounding boxes
+            let bbNewLocation = new BoundingBox(
+                addVector2(world.player.entityType.boundingBox.topLeft, newLocationVect),
+                addVector2(world.player.entityType.boundingBox.bottomRight, newLocationVect),
+            );
+
+            if (world.player.level.entities.every(entity => {
+                if (entity.entityType.boundingBox === undefined)
+                    return true;
+                let bbEntity = new BoundingBox(
+                    addVector2(entity.entityType.boundingBox.topLeft, entity.location),
+                    addVector2(entity.entityType.boundingBox.bottomRight, entity.location)
+                );
+                return !areBoundingBoxesColliding(bbEntity, bbNewLocation);
+            })) {
+                world.player.location = newLocationVect;
+            };
         }
 
-        redenerScenery(entities, level);
-        renderEntity(entities, 'C', 16, 16);
-        renderEntity(entities, 'M', level.player.currentLocation.x, level.player.currentLocation.y);
-        window.requestAnimationFrame((t) => updateWorld(entities, level, t, currentTime));
+        renderEntities(world.player.level.entities);
+        renderEntityTypeCode(entityTypes, 'C', 16, 16);
+        renderEntityTypeCode(entityTypes, 'M', world.player.location.x, world.player.location.y);
+        window.requestAnimationFrame((t) => updateWorld(entityTypes, world, t, currentTime));
     }
 
-
-
     let promises = [];
-    for(const element of entities) {
+    for(const element of entityTypes) {
         element.img = new Image(element.size.x, element.size.y);
         element.img.src = element.src;
         let promise = new Promise((resolve,reject) => {
@@ -158,13 +274,31 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     Promise.all(promises).then(() => {
+        // TODO: support multiple levels
         fetch('level1.json')
             .then(response => response.json())
-            .then(level =>  {
-                level.player.currentLocation = level.player.start;
-                updateWorld(entities, level, null, null);
+            .then(levelData =>  {
+
+                const world = {
+                    player: {},
+                    levels: []
+                };
+
+                const level1 = {
+                    // Parse background/scenery into entities
+                    entities: parseLevelScenery(levelData.data, entityTypes)
+                };
+                world.levels.push(level1);
+
+                // Player start details
+                world.player = parseLevelSceneryCode(entityTypes, 'M', levelData.player.start.x, levelData.player.start.y);
+                if (world.levels.length < 1)
+                    throw "No levels in world.levels";
+
+                world.player.level = world.levels[0];
+                console.log('world', world);
+                updateWorld(entityTypes, world, null, null);
             })
             .catch((error) => console.log('Error:', error));
     });
-
 });
