@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", function() {
             code: 'M',
             size: { x: 16, y: 16},
             src: 'img/cheese-master.png',
-            boundingBox: new BoundingBox(new Vector2(0,15), new Vector2(15,31))
+            boundingBox: new BoundingBox(new Vector2(0,28), new Vector2(15,31))
         }
     ];
 
