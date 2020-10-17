@@ -86,21 +86,18 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     function areBoundingBoxesColliding(a, b) {
-        // if any of a's verticies are within b they collide
-        return (
-            // a topLeft
-            (a.topLeft.x >= b.topLeft.x && a.topLeft.x <= b.bottomRight.x
-             && a.topLeft.y >= b.topLeft.y && a.topLeft.y <= b.bottomRight.y) ||
-            // a topRight
-            (a.bottomRight.x >= b.topLeft.x && a.bottomRight.x <= b.bottomRight.x
-             && a.topLeft.y >= b.topLeft.y && a.topLeft.y <= b.bottomRight.y) ||
-            // a bottomLeft
-            (a.topLeft.x >= b.topLeft.x && a.topLeft.x <= b.bottomRight.x
-             && a.bottomRight.y >= b.topLeft.y && a.bottomRight.y <= b.bottomRight.y) ||
-            // a bottomRight
-            (a.bottomRight.x >= b.topLeft.x && a.bottomRight.x <= b.bottomRight.x
-             && a.bottomRight.y >= b.topLeft.y && a.bottomRight.y <= b.bottomRight.y)
-            );
+        // from: https://stackoverflow.com/questions/20925818/algorithm-to-check-if-two-boxes-overlap#20925869
+        let x1min = a.topLeft.x;
+        let x1max = a.bottomRight.x;
+        let y1min = a.topLeft.y;
+        let y1max = a.bottomRight.y
+        let x2min = b.topLeft.x;
+        let x2max = b.bottomRight.x;
+        let y2min = b.topLeft.y;
+        let y2max = b.bottomRight.y
+
+        let isOverlapping = (x1min < x2max && x2min < x1max && y1min < y2max && y2min < y1max);
+        return isOverlapping;
     }
 
     function areEntitiesColliding(a, b) {
@@ -133,7 +130,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
     function renderEntities(entities) {
         entities
-            .forEach(entity => context.drawImage(entity.entityType.img, entity.location.x, entity.location.y));
+            .forEach(entity => {
+                context.drawImage(entity.entityType.img, entity.location.x, entity.location.y);
+                // if (entity.entityType.boundingBox !== undefined) {
+                //     context.strokeStyle = '#0F0'
+                //     context.strokeRect(
+                //         entity.location.x + entity.entityType.boundingBox.topLeft.x,
+                //         entity.location.y + entity.entityType.boundingBox.topLeft.y,
+                //         entity.entityType.boundingBox.bottomRight.x - entity.entityType.boundingBox.topLeft.x,
+                //         entity.entityType.boundingBox.bottomRight.y - entity.entityType.boundingBox.topLeft.y
+                //         );
+                // }
+            });
     }
 
     function parseLevelSceneryCode(entityTypes, entityCode, x, y) {
@@ -165,6 +173,18 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
         return entities;
+    }
+
+    function renderDebugInfo(world) {
+        const locationText = `Player.location: ${Math.round(world.player.location.x*100)/100}, ${Math.round(world.player.location.y*100)/100}`;
+        const bbLocation = new BoundingBox(
+            addVector2(world.player.entityType.boundingBox.topLeft, world.player.location),
+            addVector2(world.player.entityType.boundingBox.bottomRight, world.player.location),
+        ); 
+        const bbText = `BB: ${bbLocation.topLeft.x}, ${bbLocation.topLeft.y} - ${bbLocation.bottomRight.x}, ${bbLocation.bottomRight.y}`;
+        const text = locationText + ' ' + bbText;
+        context.fillStyle = '#0000FF';
+        context.fillText(text, 2, context.canvas.height - 20);
     }
 
 
@@ -226,7 +246,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 newLocation.y -= dy;
             }
             if (controls.player.downPressed) {
-                newLocation.y += dx;
+                newLocation.y += dy;
             }
             if (controls.player.leftPressed) {
                 newLocation.x -= dx;
@@ -235,29 +255,55 @@ document.addEventListener("DOMContentLoaded", function() {
                 newLocation.x += dx;
             }
 
-            const newLocationVect = new Vector2(newLocation.x, newLocation.y);
-            // get actual instead of relative coords for bounding boxes
-            let bbNewLocation = new BoundingBox(
-                addVector2(world.player.entityType.boundingBox.topLeft, newLocationVect),
-                addVector2(world.player.entityType.boundingBox.bottomRight, newLocationVect),
-            );
+            newLocation.x = Math.round(newLocation.x);
+            newLocation.y = Math.round(newLocation.y);
 
-            if (world.player.level.entities.every(entity => {
-                if (entity.entityType.boundingBox === undefined)
-                    return true;
-                let bbEntity = new BoundingBox(
-                    addVector2(entity.entityType.boundingBox.topLeft, entity.location),
-                    addVector2(entity.entityType.boundingBox.bottomRight, entity.location)
+            // If player has tried to move
+            if (world.player.location.x != newLocation.x || world.player.location.y != newLocation.y) {
+
+                const newLocationVect = new Vector2(newLocation.x, newLocation.y);
+                // get actual instead of relative coords for bounding boxes
+                let bbNewLocation = new BoundingBox(
+                    addVector2(world.player.entityType.boundingBox.topLeft, newLocationVect),
+                    addVector2(world.player.entityType.boundingBox.bottomRight, newLocationVect),
                 );
-                return !areBoundingBoxesColliding(bbEntity, bbNewLocation);
-            })) {
-                world.player.location = newLocationVect;
-            };
+                
+                const isPlayerColliding = !world.player.level.entities.every(entity => {
+                    if (entity.entityType.boundingBox === undefined)
+                        return true;
+                    let bbEntity = new BoundingBox(
+                        addVector2(entity.entityType.boundingBox.topLeft, entity.location),
+                        addVector2(entity.entityType.boundingBox.bottomRight, entity.location)
+                    );
+                    const areColliding = areBoundingBoxesColliding(bbEntity, bbNewLocation);
+                    // if (bbNewLocation.topLeft.y >= 112 && bbNewLocation.topLeft.y <= 127
+                    //     && bbNewLocation.topLeft.x <= 15
+                    //     && bbEntity.topLeft.x == 0 && bbEntity.topLeft.y >= 112) {
+                    //         console.log({areColliding, bbEntity, bbNewLocation});
+                    //     }
+                    return !areColliding;
+                });
+                if (isPlayerColliding) {
+                    //console.log("player is colliding when attempting to move", { from: world.player.location, to: newLocationVect });
+                } else {
+                    //console.log("player is NOT colliding when attempting to move", { from: world.player.location, to: newLocationVect });
+                    world.player.location = newLocationVect;
+                };
+            }
         }
-
+       
         renderEntities(world.player.level.entities);
         renderEntityTypeCode(entityTypes, 'C', 16, 16);
         renderEntityTypeCode(entityTypes, 'M', world.player.location.x, world.player.location.y);
+        // context.fillStyle = '#0F0';
+        // context.strokeRect(
+        //     // new Vector2(0,28), new Vector2(15,31)
+        //     world.player.location.x + 0,
+        //     world.player.location.y + 28,
+        //     15,
+        //     31-28
+        // );
+        //renderDebugInfo(world);
         window.requestAnimationFrame((t) => updateWorld(entityTypes, world, t, currentTime));
     }
 
