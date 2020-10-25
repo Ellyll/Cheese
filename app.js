@@ -27,9 +27,18 @@ document.addEventListener("DOMContentLoaded", function() {
         get bottomRight() { return this._bottomRight; }
     }
 
+    function resizeCanvas(canvas) {
+        let maxSize = Math.min(window.innerWidth, window.innerHeight) - 5; // 5px margin
+        canvas.height = maxSize;
+        canvas.width = maxSize;
+    }
 
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
+
+    resizeCanvas(canvas);
+    window.addEventListener("resize", evt => resizeCanvas(canvas));
+
 
     const entityTypes = [
         {

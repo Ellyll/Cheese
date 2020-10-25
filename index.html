@@ -11,10 +11,23 @@
                 background-color: black;
                 color: white;
             }
+
+            body {
+                margin: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            #canvasContainer {
+                align-self: center;
+            }
         </style>
     </head>
     <body>
-        <canvas id="canvas" width="500" height="500"></canvas>
+        <div id="canvasContainer">
+            <canvas id="canvas" width="500" height="500"></canvas>
+        </div>
+        
         <script src="app.js"></script>
     </body>
 </html>
