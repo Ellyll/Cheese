@@ -301,6 +301,18 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
        
+        const xc = context.canvas.width/2;
+        const yc = context.canvas.height/2;
+        const xScale = context.canvas.width / 256;
+        const yScale = context.canvas.height / 256;
+
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.fillStyle = '#000';
+        context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+        //context.clearRect(0, 0, context.canvas.width, context.canvas.height);
+        context.translate(xc-world.player.location.x,yc-world.player.location.y);
+        //context.scale(xScale,yScale);
+
         renderEntities(world.player.level.entities);
         renderEntityTypeCode(entityTypes, 'C', 16, 16);
         renderEntityTypeCode(entityTypes, 'M', world.player.location.x, world.player.location.y);
